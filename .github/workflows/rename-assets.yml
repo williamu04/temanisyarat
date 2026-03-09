@@ -1,0 +1,154 @@
+name: Auto Rename Assets
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+    paths:
+      - 'assets/**'
+
+jobs:
+  rename-assets:
+    name: Rename & Index Assets
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      pull-requests: write
+
+    steps:
+      - name: Checkout PR branch
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.head_ref }}
+          fetch-depth: 0
+          token: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Rename assets by type with index
+        id: rename
+        run: |
+          ASSETS_DIR="assets"
+          RENAMED=0
+          SUMMARY=""
+
+          # Mapping ekstensi ke kategori
+          declare -A EXT_MAP=(
+            # Image
+            [jpg]="image"   [jpeg]="image"  [png]="image"
+            [gif]="image"   [webp]="image"  [svg]="image"
+            [bmp]="image"   [tiff]="image"  [ico]="image"
+            # Video
+            [mp4]="video"   [mov]="video"   [avi]="video"
+            [mkv]="video"   [webm]="video"  [flv]="video"
+            [wmv]="video"   [m4v]="video"
+            # Audio
+            [mp3]="audio"   [wav]="audio"   [aac]="audio"
+            [ogg]="audio"   [flac]="audio"  [m4a]="audio"
+            [wma]="audio"   [opus]="audio"
+            # Document
+            [pdf]="doc"     [doc]="doc"     [docx]="doc"
+            [xls]="doc"     [xlsx]="doc"    [ppt]="doc"
+            [pptx]="doc"    [txt]="doc"     [csv]="doc"
+            # Archive
+            [zip]="archive" [rar]="archive" [tar]="archive"
+            [gz]="archive"  [7z]="archive"
+          )
+
+          # Hitung counter per kategori dari file yang sudah terindex
+          declare -A COUNTERS
+          for category in image video audio doc archive; do
+            COUNTERS[$category]=0
+          done
+
+          # Scan file yang SUDAH berformat {category}-{angka}.ext untuk ambil counter tertinggi
+          while IFS= read -r -d '' file; do
+            filename=$(basename "$file")
+            ext="${filename##*.}"
+            ext_lower="${ext,,}"
+            base="${filename%.*}"
+            category="${EXT_MAP[$ext_lower]}"
+            [ -z "$category" ] && continue
+
+            if [[ "$base" =~ ^${category}-([0-9]+)$ ]]; then
+              num="${BASH_REMATCH[1]}"
+              if (( num > COUNTERS[$category] )); then
+                COUNTERS[$category]=$num
+              fi
+            fi
+          done < <(find "$ASSETS_DIR" -maxdepth 1 -type f -print0 | sort -z)
+
+          echo "Counter awal per kategori:"
+          for cat in "${!COUNTERS[@]}"; do echo "  $cat: ${COUNTERS[$cat]}"; done
+
+          # Rename file yang BELUM berformat {category}-{angka}.ext
+          while IFS= read -r -d '' file; do
+            filename=$(basename "$file")
+            ext="${filename##*.}"
+            ext_lower="${ext,,}"
+            base="${filename%.*}"
+            category="${EXT_MAP[$ext_lower]}"
+
+            # Skip ekstensi tidak dikenal
+            if [ -z "$category" ]; then
+              echo "Skip (ekstensi tidak dikenal): $filename"
+              continue
+            fi
+
+            # Skip jika sudah berformat benar
+            if [[ "$base" =~ ^${category}-[0-9]+$ ]]; then
+              echo "Sudah terindex, skip: $filename"
+              continue
+            fi
+
+            # Naikkan counter dan tentukan nama baru
+            COUNTERS[$category]=$(( COUNTERS[$category] + 1 ))
+            new_name="${category}-${COUNTERS[$category]}.${ext_lower}"
+            new_path="${ASSETS_DIR}/${new_name}"
+
+            # Hindari overwrite jika nama baru sudah ada
+            while [ -f "$new_path" ]; do
+              COUNTERS[$category]=$(( COUNTERS[$category] + 1 ))
+              new_name="${category}-${COUNTERS[$category]}.${ext_lower}"
+              new_path="${ASSETS_DIR}/${new_name}"
+            done
+
+            git mv "$file" "$new_path"
+            echo "Renamed: $filename -> $new_name"
+            SUMMARY="${SUMMARY}\n- \`${filename}\` → \`${new_name}\`"
+            RENAMED=$(( RENAMED + 1 ))
+
+          done < <(find "$ASSETS_DIR" -maxdepth 1 -type f -print0 | sort -z)
+
+          echo "renamed_count=$RENAMED" >> $GITHUB_OUTPUT
+          echo -e "$SUMMARY" > /tmp/rename_summary.txt
+
+      - name: Commit renamed assets
+        if: steps.rename.outputs.renamed_count != '0'
+        run: |
+          git config user.name  "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git commit -m "chore(assets): auto-rename ${{ steps.rename.outputs.renamed_count }} asset(s) dengan format terindex"
+          git push origin HEAD:${{ github.head_ref }}
+
+      - name: Komentar hasil rename di PR
+        if: steps.rename.outputs.renamed_count != '0'
+        run: |
+          SUMMARY=$(cat /tmp/rename_summary.txt)
+          gh pr comment ${{ github.event.pull_request.number }} \
+            --body "### Auto Rename Assets
+
+          **${{ steps.rename.outputs.renamed_count }} file** berhasil di-rename secara otomatis:
+
+          ${SUMMARY}
+
+          > Perubahan sudah di-commit ke branch ini."
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Komentar jika tidak ada yang perlu di-rename
+        if: steps.rename.outputs.renamed_count == '0'
+        run: |
+          gh pr comment ${{ github.event.pull_request.number }} \
+            --body "### Auto Rename Assets
+
+          Semua asset di \`assets/\` sudah menggunakan format terindex. Tidak ada yang perlu di-rename."
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
