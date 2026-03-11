@@ -1,0 +1,1 @@
+Alasan memilih gerkatin sebagai mitra daripada pusbisindo adalah karena gerkatin merupakan komunitas tuli langsung yang berhubungan dengan kesejahteraan. Sehingga projek ini diharapkan bisa diterapkan langsung dalam menunjang komunikasi inklusif dan pelestarian budaya komunitas tuli di solo terutama pada skenario di mana teman tuli berkontribusi langsung di masyarakat heterogen.
