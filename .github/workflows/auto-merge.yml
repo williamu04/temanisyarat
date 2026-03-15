@@ -1,0 +1,86 @@
+name: Auto Merge - No Conflict
+
+on:
+  pull_request:
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: write
+  pull-requests: write
+
+jobs:
+  auto-merge-no-conflict:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Check mergeability
+        id: check-mergeable
+        run: |
+          PR_NUMBER=${{ github.event.pull_request.number }}
+
+          MERGEABLE=$(gh pr view "$PR_NUMBER" \
+            --json mergeable,mergeStateStatus,state \
+            --jq '.mergeable + " " + .mergeStateStatus + " " + .state')
+
+          echo "Raw mergeability: $MERGEABLE"
+
+          MERGEABLE_FLAG=$(echo "$MERGEABLE" | awk '{print $1}')
+          MERGE_STATE_STATUS=$(echo "$MERGEABLE" | awk '{print $2}')
+          PR_STATE=$(echo "$MERGEABLE" | awk '{print $3}')
+
+          echo "mergeable_flag=$MERGEABLE_FLAG" >> $GITHUB_OUTPUT
+          echo "merge_state_status=$MERGE_STATE_STATUS" >> $GITHUB_OUTPUT
+          echo "pr_state=$PR_STATE" >> $GITHUB_OUTPUT
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Auto merge PR (no conflict)
+        if: |
+          steps.check-mergeable.outputs.pr_state == 'OPEN' &&
+          steps.check-mergeable.outputs.mergeable_flag == 'MERGEABLE' &&
+          steps.check-mergeable.outputs.merge_state_status != 'BLOCKED'
+        run: |
+          PR_NUMBER=${{ github.event.pull_request.number }}
+          PR_TITLE=${{ github.event.pull_request.title }}
+
+          echo "PR #$PR_NUMBER tidak punya conflict dan tidak diblok. Melakukan auto-merge..."
+
+          gh pr merge "$PR_NUMBER" \
+            --squash \
+            --auto \
+            --subject "Auto-merge: $PR_TITLE" \
+            --body "Auto-merged oleh GitHub Actions karena tidak ada conflict dan status merge bisa dilakukan."
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Skip merge (punya conflict atau diblok)
+        if: |
+          steps.check-mergeable.outputs.pr_state != 'OPEN' ||
+          steps.check-mergeable.outputs.mergeable_flag != 'MERGEABLE' ||
+          steps.check-mergeable.outputs.merge_state_status == 'BLOCKED'
+        run: |
+          PR_NUMBER=${{ github.event.pull_request.number }}
+
+          echo "Auto-merge dilewati. Detail:"
+          echo "  state           : ${{ steps.check-mergeable.outputs.pr_state }}"
+          echo "  mergeable_flag  : ${{ steps.check-mergeable.outputs.mergeable_flag }}"
+          echo "  merge_state     : ${{ steps.check-mergeable.outputs.merge_state_status }}"
+
+          gh pr comment "$PR_NUMBER" \
+            --body "**Auto-merge dilewati**
+
+          PR ini **belum bisa di-merge otomatis**.
+
+          State: \`${{ steps.check-mergeable.outputs.pr_state }}\`
+          mergeable: \`${{ steps.check-mergeable.outputs.mergeable_flag }}\`
+          mergeStateStatus: \`${{ steps.check-mergeable.outputs.merge_state_status }}\`
+
+          Pastikan tidak ada conflict, checks lulus, dan requirements lain terpenuhi, lalu push ulang."
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
