@@ -23,13 +23,15 @@ jobs:
         run: |
           PR_NUMBER=${{ github.event.pull_request.number }}
 
-          MERGEABLE=$(gh pr view "$PR_NUMBER" \
-            --json mergeable,mergeStateStatus,state \
+          for i in {1..5}; do
+            MERGEABLE=$(gh pr view "$PR_NUMBER" --json mergeable,mergeStateStatus,state \
             --jq '.mergeable + " " + .mergeStateStatus + " " + .state')
+            MERGEABLE_FLAG=$(echo "$MERGEABLE" | awk '{print $1}')
+            [ "$MERGEABLE_FLAG" != "UNKNOWN" ] && break
+            echo "Mergeable masih UNKNOWN, retry $i/5..."
+            sleep 10
+          done
 
-          echo "Raw mergeability: $MERGEABLE"
-
-          MERGEABLE_FLAG=$(echo "$MERGEABLE" | awk '{print $1}')
           MERGE_STATE_STATUS=$(echo "$MERGEABLE" | awk '{print $2}')
           PR_STATE=$(echo "$MERGEABLE" | awk '{print $3}')
 
@@ -46,7 +48,7 @@ jobs:
           steps.check-mergeable.outputs.merge_state_status != 'BLOCKED'
         run: |
           PR_NUMBER=${{ github.event.pull_request.number }}
-          PR_TITLE=${{ github.event.pull_request.title }}
+          PR_TITLE="${{ github.event.pull_request.title }}"
 
           echo "PR #$PR_NUMBER tidak punya conflict dan tidak diblok. Melakukan auto-merge..."
 
