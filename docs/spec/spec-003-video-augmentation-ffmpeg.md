@@ -14,7 +14,7 @@ Sehingga setiap video akan berjumlah 6 setelah proses augmentasi, yang mana cuku
 ffmpeg -y -i "$VIDEO" \
 	-vf "scale-1280:720, fps=24" \
 	-an -c:v libx264 \ 
-	"$OUTPUT_DIR/$LABEL/${BASENAME}.mp4"
+	"$OUTPUT_DIR/$LABEL/${BASENAME}_1.mp4"
 ```
 # Augmentation
 ```sh
@@ -23,27 +23,27 @@ BASENAME=$(basename "$VIDEO" .mp4)
 # 1. Brightness +
 ffmpeg -y -i "$VIDEO" \
 	-vf "eq=brightness=0.1" \
-	"$OUTPUT_DIR/$LABEL/${BASENAME}_bright_plus.mp4"
+	"$OUTPUT_DIR/$LABEL/${BASENAME}_2.mp4"
 
 # 2. Brightness -
 ffmpeg -y -i "$VIDEO" \
 	-vf "eq=brightness=-0.1" \
-	"$OUTPUT_DIR/$LABEL/${BASENAME}_bright_minus.mp4"
+	"$OUTPUT_DIR/$LABEL/${BASENAME}_3.mp4"
 
 # 3. Horizontal Flip
 ffmpeg -y -i "$VIDEO" \
 	-vf "hflip" \
-	"$OUTPUT_DIR/$LABEL/${BASENAME}_hflip.mp4"
+	"$OUTPUT_DIR/$LABEL/${BASENAME}_4.mp4"
 
 # 4. Horizontal Flip and Brightness +
 ffmpeg -y -i "$VIDEO" \
 	-vf "hflip, eq=brightness=0.1" \
-	"$OUTPUT_DIR/$LABEL/${BASENAME}_hflip_bright_plus.mp4"
+	"$OUTPUT_DIR/$LABEL/${BASENAME}_5.mp4"
 
 # 5. Horizontal Flip and Brightness -
 ffmpeg -y -i "$VIDEO" \
 	-vf "hflip, eq=brightness=-0.1" \
-	"$OUTPUT_DIR/$LABEL/${BASENAME}_hflip_bright_minus.mp4"
+	"$OUTPUT_DIR/$LABEL/${BASENAME}_6.mp4"
 ```
 
 
