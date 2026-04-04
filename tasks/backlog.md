@@ -11,3 +11,7 @@
 # Tanda Tangan Kontrak Hibah (13/03/2026)
 1. Tanda tangan kontrak hibah di akademik pusat 
 2. Membawa 2 materai 
+# Pertemuan Offline dengan mas Bima Gerkatin (31/03/2036)
+1. Menyarankan fitur yang dapat digunakan oleh pengguna tuli yang juga merupakan netra
+2. Meminta mas bima untuk mengajak 5 orang anggota GERKATIN menjadi narasumber
+3. Membuat grup whatsapps bersama dengan anggota GERKATIN
