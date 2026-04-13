@@ -128,7 +128,8 @@ def build_parser() -> argparse.ArgumentParser:
     # ---- single ----
     p_single = sub.add_parser("single", help="Process one video")
     p_single.add_argument("input", help="Input video path")
-    p_single.add_argument("--out-video", default=None, help="Annotated video output path")
+    p_single.add_argument("--out-video", default=None,
+                          help="Annotated video output path")
     p_single.add_argument("--out-npy", default=None, help=".npz output path")
     _add_model_args(p_single)
     _add_confidence_args(p_single)
@@ -137,8 +138,10 @@ def build_parser() -> argparse.ArgumentParser:
     # ---- batch ----
     p_batch = sub.add_parser("batch", help="Process all videos in a folder")
     p_batch.add_argument("folder", help="Input folder path")
-    p_batch.add_argument("--out-video-dir", default=None, help="Dir for annotated videos")
-    p_batch.add_argument("--out-npy-dir", default=None, help="Dir for .npz files")
+    p_batch.add_argument("--out-video-dir", default=None,
+                         help="Dir for annotated videos")
+    p_batch.add_argument("--out-npy-dir", default=None,
+                         help="Dir for .npz files")
     p_batch.add_argument(
         "--recursive", action="store_true", help="Scan sub-directories too"
     )

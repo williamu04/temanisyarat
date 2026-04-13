@@ -6,7 +6,7 @@ Mediapipe versi terbaru cukup berbeda dengan versi yang sebelumnya. Perbedaan ut
 Model (task by mediapipe)
 - [Hand Landmarker](https://storage.googleapis.com/mediapipe-models/hand_landmarker/hand_landmarker/float16/latest/hand_landmarker.task)
 - [Face Landmarker](https://storage.googleapis.com/mediapipe-models/face_landmarker/face_landmarker/float16/latest/face_landmarker.task)
-- [Pose Landmarker]()
+- [Pose Landmarker](https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_heavy/float16/latest/pose_landmarker_heavy.task)
 
 Contoh kode [Google Colab](https://colab.research.google.com/github/googlesamples/mediapipe/blob/main/examples/gesture_recognizer/python/gesture_recognizer.ipynb#scrollTo=Iy4r2_ePylIa)
 [Dokumentasi Holistic](https://github.com/google/mediapipe/blob/master/docs/solutions/holistic.md)
